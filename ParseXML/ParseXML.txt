@@ -1,0 +1,74 @@
+build.gradle dosyasındaki dependencies kısmına "implementation 'com.android.volley:volley:1.2.0'" ekleyin.
+
+Değişkenleri Ekleyelim:
+    String url;
+    RequestQueue myQueue;
+    Response.Listener<String> myListener;
+    Response.ErrorListener errorListener;
+    StringRequest stringRequest;
+
+Aktivite Açıldığında Çalışacaklar:
+        myQueue = Volley.newRequestQueue(context);
+        listenerSettings();
+        getData();
+
+Eklenecek Metotlar:
+    void getData() {
+        stringRequest = new StringRequest(Request.Method.GET, url, myListener, errorListener);
+        myQueue.add(stringRequest);
+    }
+
+    void listenerSettings() {
+        myListener = new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                ArrayList<String> itemList = parseItems(response);
+                ArrayList<HashMap<String, String>> itemMapList = parseElements(itemList);
+            }
+        };
+        errorListener = new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Toast.makeText(context, error.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        };
+    }
+
+    ArrayList<String> parseItems(String document) {
+        ArrayList<String> items = new ArrayList<>();
+        int beginOld = 0;
+        int endOld = 0;
+        while (true) {
+            try {
+                int begin = document.indexOf("<item>", beginOld);
+                beginOld = begin + ("<item>").length();
+                int end = document.indexOf("</item>", endOld) + ("</item>").length();
+                endOld = end;
+                items.add(document.substring(begin, end));
+            } catch (Exception e) {
+                break;
+            }
+        }
+        return items;
+    }
+
+    ArrayList<HashMap<String, String>> parseElements(ArrayList<String> itemList) {
+        ArrayList<HashMap<String, String>> itemMapList = new ArrayList<>();
+        for (int i = 0; i < itemList.size(); i++) {
+            HashMap<String, String> itemMap = new HashMap<>();
+            String item = itemList.get(i);
+            itemMap.put("title", parseElemet(item, "title"));
+            itemMap.put("description", parseElemet(item, "description"));
+            itemMap.put("link", parseElemet(item, "link"));
+            itemMap.put("pubDate", parseElemet(item, "pubDate"));
+            itemMapList.add(itemMap);
+        }
+        return itemMapList;
+    }
+
+    String parseElemet(String item, String element) {
+        int beginIndex = item.indexOf("<" + element + ">") + ("<" + element + ">").length();
+        int endIndex = item.indexOf("</" + element + ">");
+        return item.substring(beginIndex, endIndex);
+    }
+}
